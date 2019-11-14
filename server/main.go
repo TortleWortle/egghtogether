@@ -59,6 +59,7 @@ const (
 	sendAnswerOp     = "SEND_ANSWER"
 	readyOp          = "READY"
 	iceCandidateOp   = "ICE_CANDIDATE"
+	heartBeatOp      = "HEARTBEAT"
 )
 
 type packet struct {
@@ -97,10 +98,12 @@ func handleConn(room *Room, conn *Connection) {
 			log.Printf("read(%s): %s\n", id, err)
 			return
 		}
-		log.Printf("recv(%s): %s", id, message)
 		var msg map[string]interface{}
 		json.Unmarshal(message, &msg)
+		log.Printf("recv(%s): %s", id, msg["op"])
 		switch msg["op"] {
+		case heartBeatOp:
+			log.Printf("heartbeat from %s", id)
 		case claimOwnerShipOp:
 			if room.Secret == msg["secret"] {
 				room.setOwner(conn.ID)
@@ -167,12 +170,17 @@ func handleConn(room *Room, conn *Connection) {
 	}
 }
 
+func redirect(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "https://github.com/TortleWortle/egghtogether/releases", 307)
+}
+
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
 
 	r := mux.NewRouter()
 
+	r.HandleFunc("/", redirect)
 	r.HandleFunc("/newroom", newRoom)
 	r.HandleFunc("/rooms/{id}", joinRoom)
 	r.HandleFunc("/watch/{id}", watchRoute)

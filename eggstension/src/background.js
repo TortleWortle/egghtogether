@@ -10,6 +10,7 @@ let secret;
 let id;
 let rtc = {};
 let stream
+let timeout
 
 function onmsg(evt) {
   const e = JSON.parse(evt.data);
@@ -90,6 +91,12 @@ async function startSocket() {
   }
   ws.onmessage = onmsg
 
+  timeout = setInterval(() => {
+    ws.send(JSON.stringify({
+      op: "HEARTBEAT"
+    }))
+  }, 30000)
+
   chrome.tabs.create({ url: `http://${host}/watch/${info.id}` });
 }
 
@@ -117,7 +124,7 @@ chrome.extension.onConnect.addListener(function (port) {
       case 'STOP_SHARE':
         if (Object.keys(rtc).length > 0) {
           Object.keys(rtc).forEach(key => {
-            rtc[key].close()
+            if (rtc[key]) rtc[key].close()
           })
           rtc = {}
         }
@@ -126,9 +133,10 @@ chrome.extension.onConnect.addListener(function (port) {
           ws = null
         }
         if (stream) {
-          stream.getTracks().forEach(track => track.stop)
+          stream.getTracks().forEach(track => track.stop())
           stream = null
         }
+        clearTimeout(timeout)
         break
     }
   });

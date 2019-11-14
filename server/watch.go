@@ -22,6 +22,7 @@ var watchTemplate = template.Must(template.New("").Parse(`<video autoplay="autop
 	let ws;
 	let rtc;
 	let stream;
+	let timeout;
 	const video = document.querySelector('video')
 
 
@@ -92,6 +93,7 @@ var watchTemplate = template.Must(template.New("").Parse(`<video autoplay="autop
 		if (!ws) return
 		ws.close()
 		ws = null
+		clearTimeout(timeout)
 	}
 	const open = (url) => {
 		if (ws) return
@@ -107,6 +109,12 @@ var watchTemplate = template.Must(template.New("").Parse(`<video autoplay="autop
 			console.log("Connection closing")
 		}
 		ws.onmessage = onmsg
+
+		timeout = setInterval(() => {
+			ws.send(JSON.stringify({
+				op: "HEARTBEAT"
+			}))
+		}, 30000)
 	}
 	open("{{.}}")
 </script>`))
