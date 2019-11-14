@@ -173,10 +173,6 @@ func main() {
 
 	r := mux.NewRouter()
 
-	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-
-	// fs := http.FileServer(http.Dir("static"))
-	// r.Handle("/", fs)
 	r.HandleFunc("/newroom", newRoom)
 	r.HandleFunc("/rooms/{id}", joinRoom)
 	r.HandleFunc("/watch/{id}", watchRoute)
