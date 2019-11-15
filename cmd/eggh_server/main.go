@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -62,7 +63,10 @@ func main() {
 	r.HandleFunc("/newroom", newRoom)
 	r.HandleFunc("/rooms/{id}", joinRoom)
 	r.HandleFunc("/watch/{id}", routes.WatchRoute)
-	// r.HandleFunc("/info", room.DebugInfoRoute)
+
+	if os.Getenv("debug") == "true" {
+		r.HandleFunc("/info", manager.DebugInfoRoute)
+	}
 
 	srv := &http.Server{
 		Handler: r,
