@@ -1,18 +1,25 @@
-package main
+package routes
 
 import (
 	"html/template"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
 
-func watchRoute(w http.ResponseWriter, r *http.Request) {
+// WatchRoute returns the route to watch a stream (To be deleted soon)
+func WatchRoute(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	roomID := vars["id"]
+	protocol := "wss"
+
+	if strings.HasPrefix(r.Host, "localhost") {
+		protocol = "ws"
+	}
 
 	w.Header().Set("Content-Type", "text/html")
-	watchTemplate.Execute(w, "wss://"+r.Host+"/rooms/"+roomID)
+	watchTemplate.Execute(w, protocol+"://"+r.Host+"/rooms/"+roomID)
 }
 
 var watchTemplate = template.Must(template.New("").Parse(`<video autoplay="autoplay" controls width="1280px" height="720px"></video>
