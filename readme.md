@@ -11,15 +11,4 @@ please don't use ;-;
 - [ ] Better handling of disconnects
 - [ ] Generate frontend instead of manually embedding
 
-## Extension Todo
-- [x] Don't crash computer
-- [ ] Handle reconnects
-- [ ] Don't randomly die
-- [ ] Fix stopping (Currently requires extension reload)
-- [ ] Basically Rewrite it
-- 
-
-## Readme Todo
-- [ ] Remove empty bullet point from Extension Todo
-
 _spaghetti_
