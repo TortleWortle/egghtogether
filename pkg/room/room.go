@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/rs/xid"
+	"github.com/tortlewortle/egghtogether/internal/util"
 	"github.com/tortlewortle/egghtogether/pkg/connection"
 )
 
@@ -20,9 +21,7 @@ type Room struct {
 // New makes a new room
 func New() *Room {
 	id := xid.New().String()
-	// secret, err := GenerateRandomString(64)
-	secret := "Ok Boomer"
-	var err error
+	secret, err := util.GenerateRandomString(64)
 
 	if err != nil {
 		panic(err)
