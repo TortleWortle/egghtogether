@@ -7,6 +7,7 @@ export function useSocket() {
 	const sendMessage = RoomStore.useStoreActions(state => state.chat.sendMessage)
 	const addMessage = RoomStore.useStoreActions(state => state.chat.addMessage)
 	const setSrcObject = RoomStore.useStoreActions(state => state.player.setSrcObject)
+
 	const wsRef = useRef(null)
 	const pcRef = useRef(null)
 

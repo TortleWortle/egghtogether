@@ -16,7 +16,6 @@ export default () => {
 	const inputRef = useRef(null)
 
 	const [isPlaying, toggleVideo] = useToggleVideo(videoEl)
-	const [aspRatio, setAspRatio] = useState(16 / 9)
 
 	// const messages = RoomStore.useStoreState(state => state.chat.messages)
 	const id = RoomStore.useStoreState(state => state.id)
@@ -29,18 +28,6 @@ export default () => {
 		}
 	}, [srcObject])
 
-	useEffect(() => {
-		if (srcObject) {
-			const tracks = srcObject.getVideoTracks()
-			if (tracks.length > 0) {
-				const ratio = tracks[0].getSettings().aspectRatio;
-
-				if (ratio) {
-					setAspRatio(ratio)
-				}
-			}
-		}
-	}, [srcObject, isPlaying])
 	// const sendMessage = RoomStore.useStoreActions(state => state.chat.sendMessage)
 	const { sendMessage } = useSocket();
 
@@ -77,12 +64,11 @@ export default () => {
 	return (
 		<div className="bg-indigo-900 text-white h-screen flex">
 			<div className="w-3/4">
-				<video controls autoPlay={true} style={{ maxHeight: `calc(75vw/${aspRatio})` }} loop className={`w-full`} ref={videoEl} src={video}></video>
+				<video controls autoPlay={true} style={{ maxHeight: `calc(100vh)` }} loop className={`w-full`} ref={videoEl} src={video}></video>
 				<button className={`bg-indigo-700 text-white p-3 py-1 m-2 rounded`} onClick={() => {
 					toggleVideo()
 				}}>{isPlaying ? "Pause" : "Play"}</button>
 				RoomID: {id}
-				AspRatio: {aspRatio}
 			</div>
 			<div className="flex flex-col w-1/4">
 				{/* <ul className="flex-grow overflow-scroll" ref={chatEl}>
