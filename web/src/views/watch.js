@@ -1,80 +1,14 @@
-import React, { useRef, useState, useEffect, useReducer } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import useToggleVideo from '../hooks/useToggleVideo'
-import { useStoreState, useStoreActions } from 'easy-peasy'
 import { RoomStore } from "../store/roomStore"
-import { RoomSocket } from '../ws'
+import { useSocket } from "../hooks/useSocket"
 
 import "webrtc-adapter"
 
 const videos = ["https://cdn.discordapp.com/attachments/593820938446045194/645379605980512256/e37840dae01f4a43fe9c61cc78e5c4d4.mp4", "https://cdn.discordapp.com/attachments/593820938446045194/645414309026856970/2d5e9a72b9493ed7920ea00bf8308fde.mp4"]
 const video = videos[Math.floor((Math.random() * 100) % videos.length)]
 
-function useSocket() {
-	const id = RoomStore.useStoreState(state => state.id)
-	const sendMessage = RoomStore.useStoreActions(state => state.chat.sendMessage)
-	const addMessage = RoomStore.useStoreActions(state => state.chat.addMessage)
-	const setSrcObject = RoomStore.useStoreActions(state => state.player.setSrcObject)
-	const wsRef = useRef(null)
-	const pcRef = useRef(null)
 
-	useEffect(() => {
-		const ws = new RoomSocket(id);
-		const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] })
-		wsRef.current = ws;
-		pcRef.current = pc;
-
-		pc.addEventListener('track', function (event) {
-			console.log("Track added")
-			setSrcObject(event.streams[0])
-		})
-
-		ws.on("SEND_ANSWER", (e) => {
-			pc.setRemoteDescription(JSON.parse(e.answer))
-		})
-
-		ws.on("ICE_CANDIDATE", (e) => {
-			pc.addIceCandidate(JSON.parse(e.candidate))
-		})
-
-
-		pc.oniceconnectionstatechange = function () {
-			if (pc.iceConnectionState == 'disconnected') {
-				console.log("Peer Connection Disconnected")
-			}
-		}
-		ws.connect().then(async () => {
-			const offer = await pc.createOffer({
-				offerToReceiveAudio: true,
-				offerToReceiveVideo: true,
-			})
-			pc.setLocalDescription(offer)
-
-			ws.sendJSON({
-				op: "CREATE_OFFER",
-				offer: JSON.stringify(offer)
-			})
-		})
-
-		return () => {
-			wsRef.current.close()
-			wsRef.current = null;
-			pcRef.current.close();
-			pcRef.current = null;
-		}
-	}, [id])
-
-
-	return {
-		sendMessage: (message) => {
-			wsRef.current.sendJSON({
-				op: "SEND_MESSAGE",
-				data: {
-					message
-				}
-			})
-		}
-	}
-}
 
 export default () => {
 	const videoEl = useRef(null)
@@ -82,6 +16,7 @@ export default () => {
 	const inputRef = useRef(null)
 
 	const [isPlaying, toggleVideo] = useToggleVideo(videoEl)
+	const [aspRatio, setAspRatio] = useState(16 / 9)
 
 	// const messages = RoomStore.useStoreState(state => state.chat.messages)
 	const id = RoomStore.useStoreState(state => state.id)
@@ -93,6 +28,19 @@ export default () => {
 			videoEl.current.play();
 		}
 	}, [srcObject])
+
+	useEffect(() => {
+		if (srcObject) {
+			const tracks = srcObject.getVideoTracks()
+			if (tracks.length > 0) {
+				const ratio = tracks[0].getSettings().aspectRatio;
+
+				if (ratio) {
+					setAspRatio(ratio)
+				}
+			}
+		}
+	}, [srcObject, isPlaying])
 	// const sendMessage = RoomStore.useStoreActions(state => state.chat.sendMessage)
 	const { sendMessage } = useSocket();
 
@@ -129,11 +77,12 @@ export default () => {
 	return (
 		<div className="bg-indigo-900 text-white h-screen flex">
 			<div className="w-3/4">
-				<video controls autoplay style={{ maxHeight: "calc(75vw/16*9)" }} loop className={`w-full`} ref={videoEl} src={video}></video>
+				<video controls autoPlay={true} style={{ maxHeight: `calc(75vw/${aspRatio})` }} loop className={`w-full`} ref={videoEl} src={video}></video>
 				<button className={`bg-indigo-700 text-white p-3 py-1 m-2 rounded`} onClick={() => {
 					toggleVideo()
 				}}>{isPlaying ? "Pause" : "Play"}</button>
 				RoomID: {id}
+				AspRatio: {aspRatio}
 			</div>
 			<div className="flex flex-col w-1/4">
 				{/* <ul className="flex-grow overflow-scroll" ref={chatEl}>
