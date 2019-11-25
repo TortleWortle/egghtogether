@@ -4,14 +4,16 @@ import (
 	"encoding/json"
 	"flag"
 	"log"
+	"mime"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
-	"github.com/tortlewortle/egghtogether/internal/routes"
-	"github.com/tortlewortle/egghtogether/pkg/connection"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	assets "github.com/tortlewortle/egghtogether/internal/bindata"
 	"github.com/tortlewortle/egghtogether/pkg/room"
 )
 
@@ -44,7 +46,7 @@ func joinRoom(w http.ResponseWriter, r *http.Request) {
 	}
 	defer c.Close()
 
-	conn := connection.New(c)
+	conn := room.NewConnection(c)
 
 	currentRoom.HandleConn(conn)
 }
@@ -53,19 +55,37 @@ func redirect(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "https://github.com/TortleWortle/egghtogether/releases", 307)
 }
 
+func serveAsset(w http.ResponseWriter, r *http.Request) {
+	asset, err := assets.Asset(r.URL.Path[1:])
+	if err != nil {
+		asset, err = assets.Asset("index.html")
+		if err != nil {
+			panic("index.html not found D:")
+		}
+	}
+	splat := strings.SplitN(r.URL.Path[1:], ".", -1)
+
+	if len(splat) > 1 {
+		w.Header().Set("Content-Type", mime.TypeByExtension("."+splat[1]))
+	}
+
+	w.Write(asset)
+	// http.Redirect(w, r, "https://github.com/TortleWortle/egghtogether/releases", 307)
+}
+
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/", redirect)
-	r.HandleFunc("/newroom", newRoom)
-	r.HandleFunc("/rooms/{id}", joinRoom)
-	r.HandleFunc("/watch/{id}", routes.WatchRoute)
+	r.HandleFunc("/api/newroom", newRoom)
+	r.HandleFunc("/api/room/{id}/ws", joinRoom)
+	r.HandleFunc("/api/room/{id}/info", manager.InfoRoute)
+	r.NotFoundHandler = http.HandlerFunc(serveAsset)
 
-	if os.Getenv("debug") == "true" {
-		r.HandleFunc("/info", manager.DebugInfoRoute)
+	if os.Getenv("DEBUG") == "true" {
+		r.HandleFunc("/api/info", manager.DebugInfoRoute)
 	}
 
 	srv := &http.Server{
@@ -75,6 +95,17 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
+	mux := &http.ServeMux{}
+	mux.Handle("/metrics", promhttp.Handler())
+	metricsSrv := &http.Server{
+		Handler: mux,
+		Addr:    "127.0.0.1:9000",
+		// Good practice: enforce timeouts for servers you create!
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+	go recordMetrics()
+	go metricsSrv.ListenAndServe()
 
 	log.Fatal(srv.ListenAndServe())
 }

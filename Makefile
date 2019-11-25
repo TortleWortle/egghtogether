@@ -14,7 +14,15 @@ GOBASE := $(shell pwd)
 GOBIN := $(GOBASE)/bin
 INTERNAL := $(wildcard *.go)
 
-all: clean build
+all: clean generate build
+
+build-frontend:
+	cd web && \
+	yarn && \
+	NODE_ENV=production yarn build
+
+generate: build-frontend
+	go-bindata -pkg bindata -o internal/bindata/bindata.go -prefix web/build web/build/...
 
 build: windows linux darwin
 

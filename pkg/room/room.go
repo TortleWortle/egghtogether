@@ -6,7 +6,6 @@ import (
 
 	"github.com/rs/xid"
 	"github.com/tortlewortle/egghtogether/internal/util"
-	"github.com/tortlewortle/egghtogether/pkg/connection"
 )
 
 // Room represents a room
@@ -14,7 +13,7 @@ type Room struct {
 	ID          string `json:"id"`
 	Secret      string `json:"secret"`
 	Owner       string `json:"owner"`
-	connections map[string]*connection.Connection
+	connections map[string]*Connection
 	connlock    sync.Mutex
 }
 
@@ -28,20 +27,20 @@ func New() *Room {
 	}
 	room := &Room{
 		ID:          id,
-		connections: make(map[string]*connection.Connection),
+		connections: make(map[string]*Connection),
 		Secret:      secret,
 	}
 	return room
 }
 
 // GetConn gets a connection from a room
-func (r *Room) GetConn(id string) (*connection.Connection, error) {
+func (r *Room) GetConn(id string) (*Connection, error) {
 	r.connlock.Lock()
 	defer r.connlock.Unlock()
 	conn, ok := r.connections[id]
 
 	if !ok {
-		return &connection.Connection{}, errors.New("Connection doesn't exist")
+		return &Connection{}, errors.New("Connection doesn't exist")
 	}
 	return conn, nil
 }
@@ -61,7 +60,7 @@ func (r *Room) RemoveConn(id string) {
 }
 
 // AddConn adds a connection to a room
-func (r *Room) AddConn(c *connection.Connection) {
+func (r *Room) AddConn(c *Connection) {
 	r.connlock.Lock()
 	defer r.connlock.Unlock()
 	r.connections[c.ID] = c

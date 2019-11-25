@@ -7,8 +7,9 @@ import (
 
 // Connection represents a websocket connection
 type Connection struct {
-	ID   string
-	Conn *websocket.Conn
+	ID       string
+	Conn     *websocket.Conn
+	Nickname string
 }
 
 // New creates a new Connection
@@ -18,5 +19,6 @@ func New(c *websocket.Conn) *Connection {
 	return &Connection{
 		id,
 		c,
+		id,
 	}
 }
